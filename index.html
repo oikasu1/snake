@@ -153,7 +153,7 @@
 
 
     <div id="gameSettings">
-        <h2>🥷學校客事100句 (貪食蛇)</h2>
+        <h2>🥷學校客事100句 (貪食蛇:-)</h2>
         <div>
             <label for="lessonSelect">關卡：</label>
             <select id="lessonSelect"></select>
@@ -655,6 +655,23 @@ const myData = `
 		let unusedWords = [];
 
 
+
+function playTwice() {
+    if (currentAudio) {
+        currentAudio.pause();
+        currentAudio.currentTime = 0;
+        currentAudio.play();
+        currentAudio.onended = function() {
+            if (this.playCount === undefined) {
+                this.playCount = 1;
+                currentAudio.play(); // 播放第二次
+            } else {
+                this.playCount = undefined; // 重置計數
+            }
+        };
+    }
+}
+
         function processMyData() {
             const lines = myData.trim().split('\n');
             headers = lines[0].trim().split(/\t/); 
@@ -889,11 +906,13 @@ function updateAnswerSelect() {
 
 			wordDisplay.textContent = `🥷 ${currentWord}`;
 
-    const audioURL = `https://oikasu1.github.io/kasu100/${selectedWord['音檔']}`;
 
-    // 預加載並播放音效
-    currentAudio = preloadAudio(audioURL);
-    playOnce(); 
+    // 檢查是否有對應的音檔並設置
+    if (selectedWord['音檔']) {            
+        currentAudio = new Audio(`https://oikasu1.github.io/kasu100/${selectedWord['音檔']}`);
+        console.log(currentAudio);
+        playTwice(); // 直接調用 playTwice()
+    }
 
 			// 獲取選擇的方塊數量
 			const selectedBlockCount = parseInt(document.getElementById('blockCountSelect').value);
@@ -937,20 +956,7 @@ function updateAnswerSelect() {
                 document.getElementById('wrongFoodLabel2').style.display = 'none';
             }
         }
-// 預加載音檔
-function preloadAudio(url) {
-    const audio = new Audio(url);
-    audio.load();
-    return audio;
-}
 
-// 播放一次音效
-function playOnce() {
-    if (currentAudio) {
-        currentAudio.currentTime = 0;  // 將音檔時間重置到開頭
-        currentAudio.play();  // 只播放一次
-    }
-}
         function generateFoodPosition() {
             const centerX = Math.floor(canvas.width / (2 * gridSize));
             const centerY = Math.floor(canvas.height / (2 * gridSize));
@@ -1087,6 +1093,10 @@ function playOnce() {
             canvas.style.display = 'none';
             document.getElementById('gameSettings').style.display = 'block';
             document.getElementById('speedSelection').style.display = 'block';
+
+			// 移除點擊事件監聽器
+			canvas.removeEventListener('click', playTwice);
+
             canvas.style.display = 'none';
             container.style.display = 'none';
             correctFoodLabel.style.display = 'none';
@@ -1196,6 +1206,9 @@ function playOnce() {
             container.style.display = 'block';
             correctFoodLabel.style.display = 'block';
             wrongFoodLabel.style.display = 'block';
+			// 添加點擊事件監聽器
+			canvas.addEventListener('click', playTwice);
+
 			resetUnusedWords();
 			initGame();
 			gameInterval = setInterval(gameLoop, gameSpeed);
