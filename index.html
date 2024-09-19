@@ -177,7 +177,7 @@
 			<button onclick="startGame('slow')">寬寬 🚲</button>
 			<button onclick="startGame('normal')">普通 🚗</button>
 			<button onclick="startGame('quick')">真緊 🛩️</button>
-			<button onclick="startGame('fast')">足緊 🚀</button>
+			<button id="startGameButton" onclick="startGame('fast')">足緊 🚀</button>
 			<p>🏷️選方向：平板用滑螢幕，電腦用方向鍵。</p>
 		</div>
     </div>
@@ -1254,6 +1254,18 @@ scaleElement(container);
 		window.addEventListener('resize', function() {
 			scaleElement(container);
 		});
+
+document.querySelector('#startGameButton').addEventListener('click', function() {
+    // 初始化一個無聲音頻，獲取播放權限
+    const dummyAudio = new Audio();
+    dummyAudio.play().then(() => {
+        console.log('已獲取音頻播放權限');
+    }).catch(() => {
+        console.log('無法自動播放音頻，可能需要用戶觸發');
+    });
+    
+    startGame(); // 開始遊戲
+});
     </script>
 </body>
 
