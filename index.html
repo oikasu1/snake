@@ -32,13 +32,17 @@
 	}
 	#gameSettings h2 {
 		margin-top: 0;
-		margin-bottom: 10px;
+		margin-bottom: 20px;
 		color: #2c3e50;
 		font-size: 24px;
 		text-align: center;
 	}
 	#gameSettings div {
 		margin-bottom: 0px;
+	}
+	#gameSettings p {
+	   margin-left: 40px;
+
 	}
 	#gameSettings label {
 		display: inline-block;
@@ -57,9 +61,6 @@
 	}
 
 	#speedSelection {
-		text-align: center;
-		margin-top: 20px;
-		margin-bottom: 10px;
 	}
 	#speedSelection h2 {
 		margin-bottom: 15px;
@@ -98,8 +99,6 @@
 	}
         #gameCanvas {
             border: 2px solid #bbb;
-            max-width: 100%;
-            max-height: 80vh;
 			background-color: #fcfcfc;
             display: none;
         }
@@ -142,45 +141,67 @@
         }
 
         select {
-            margin: 10px;
+            margin: 5px 10px;
             padding: 5px;
         }
+
+#startButton {
+  display: block;
+  margin: 10px auto;
+  padding: 10px 20px;
+  font-size: 18px;
+  background-color: #4CAF50;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+#startButton:hover {
+  background-color: #45a049;
+}
     </style>
 </head>
 
 <body>
 
+<div id="gameSettings">
+  <h2>🥷學校客事100句</h2>
+  <div>
+    <label for="lessonSelect">關卡：</label>
+    <select id="lessonSelect"></select>
+  </div>
+  <div>
+    <label for="questionSelect">題目：</label>
+    <select id="questionSelect"></select>
+  </div>
+  <div>
+    <label for="answerSelect">答案：</label>
+    <select id="answerSelect"></select>
+  </div>
+  <div>
+    <label for="blockCountSelect">數量：</label>
+    <select id="blockCountSelect">
+      <option value="2">2</option>
+      <option value="3">3</option>
+    </select>
+  </div>
+  <div id="speedSelection">
+    <label for="speedSelect">速度：</label>
+    <select id="speedSelect">
+      <option value="slow">寬寬 🚲</option>
+      <option value="normal">普通 🚗</option>
+      <option value="quick">真緊 🛩️</option>
+      <option value="fast">足緊 🚀</option>
+    </select>
+  </div>
+  <p>🏷️選方向：平板用滑螢幕，電腦用方向鍵。</p>
+  <p>🏷️語音：iPad點遊戲區可發音。</p> 
+  <button id="startButton">貪食蛇 ;)</button>
+
+</div>
 
 
-    <div id="gameSettings">
-        <h2>🥷學校客事100句 (貪食蛇:-)</h2>
-        <div>
-            <label for="lessonSelect">關卡：</label>
-            <select id="lessonSelect"></select>
-        </div>
-        <div>
-            <label for="questionSelect">題目：</label>
-            <select id="questionSelect"></select>
-        </div>
-        <div>
-            <label for="answerSelect">答案：</label>
-            <select id="answerSelect"></select>
-        </div>
-        <div>
-            <label for="blockCountSelect">數量：</label>
-            <select id="blockCountSelect">
-                <option value="2">2</option>
-                <option value="3">3</option>
-            </select>
-        </div>
-		<div id="speedSelection">			
-			<button onclick="startGame('slow')">寬寬 🚲</button>
-			<button onclick="startGame('normal')">普通 🚗</button>
-			<button onclick="startGame('quick')">真緊 🛩️</button>
-			<button onclick="startGame('fast')">足緊 🚀</button>
-			<p>🏷️選方向：平板用滑螢幕，電腦用方向鍵。</p>
-		</div>
-    </div>
 
 
     <div id="container">
@@ -653,6 +674,7 @@ const myData = `
         let lessons = {};
         let allWords = [];
 		let unusedWords = [];
+		let isGameRunning = false;
 
 
 
@@ -858,11 +880,17 @@ function updateAnswerSelect() {
             }
         }
 
-        // 在頁面加載時處理數據
-        window.onload = function() {
-            processMyData();
-            populateSelects();
-        };
+// 在文檔加載完成後執行
+window.onload = function() {
+  processMyData();
+  populateSelects();
+  
+  // 為開始遊戲按鈕添加事件監聽器
+  document.getElementById('startButton').addEventListener('click', function() {
+    const speed = document.getElementById('speedSelect').value;
+    startGame(speed);
+  });
+};
 
 		function initGame() {
 			snake = [{ x: 10, y: 10 }];
@@ -908,11 +936,11 @@ function updateAnswerSelect() {
 
 
     // 檢查是否有對應的音檔並設置
-    if (selectedWord['音檔']) {            
-        currentAudio = new Audio(`https://oikasu1.github.io/kasu100/${selectedWord['音檔']}`);
-        console.log(currentAudio);
-        playTwice(); // 直接調用 playTwice()
-    }
+  if (selectedWord['音檔']) {            
+    currentAudio = new Audio(`https://oikasu1.github.io/kasu100/${selectedWord['音檔']}`);
+    console.log(currentAudio);
+    playTwice(); // 直接調用 playTwice()
+  }
 
 			// 獲取選擇的方塊數量
 			const selectedBlockCount = parseInt(document.getElementById('blockCountSelect').value);
@@ -1080,61 +1108,67 @@ function updateAnswerSelect() {
             );
         }
 
-        function endGame() {
-			playAudio(wrongAudio);
-			// 停止當前正在播放的音檔（如果有）
-			if (currentAudio) {
-				currentAudio.pause();
-				currentAudio.currentTime = 0;
-			}
-            alert(`遊戲結束！你的得分是: ${score}`);
-            container.style.display = 'none';
-            clearInterval(gameInterval);
-            canvas.style.display = 'none';
-            document.getElementById('gameSettings').style.display = 'block';
-            document.getElementById('speedSelection').style.display = 'block';
+function endGame() {
+  playAudio(wrongAudio);
+  // 停止當前正在播放的音檔（如果有）
+  if (currentAudio) {
+    currentAudio.pause();
+    currentAudio.currentTime = 0;
+  }
+  alert(`遊戲結束！你的得分是: ${score}`);
+  container.style.display = 'none';
+  clearInterval(gameInterval);
 
-			// 移除點擊事件監聽器
-			canvas.removeEventListener('click', playTwice);
+    isGameRunning = false;
+    document.removeEventListener('keydown', handleKeyDown);
 
-            canvas.style.display = 'none';
-            container.style.display = 'none';
-            correctFoodLabel.style.display = 'none';
-            wrongFoodLabel.style.display = 'none';
-        }
-
-
+  // 移除點擊事件監聽器
+  canvas.removeEventListener('click', playTwice);
+  
+  canvas.style.display = 'none';
+  document.getElementById('gameSettings').style.display = 'block';
+  correctFoodLabel.style.display = 'none';
+  wrongFoodLabel.style.display = 'none';
+}
 
 
-        function handleKeyDown(event) {
-            switch (event.key) {
-                case 'ArrowUp':
-                    if (dy === 0) {
-                        dx = 0;
-                        dy = -1;
-                    }
-                    break;
-                case 'ArrowDown':
-                    if (dy === 0) {
-                        dx = 0;
-                        dy = 1;
-                    }
-                    break;
-                case 'ArrowLeft':
-                    if (dx === 0) {
-                        dx = -1;
-                        dy = 0;
-                    }
-                    break;
-                case 'ArrowRight':
-                    if (dx === 0) {
-                        dx = 1;
-                        dy = 0;
-                    }
-                    break;
+
+
+
+function handleKeyDown(event) {
+    if (!isGameRunning) return;
+
+    switch (event.key) {
+        case 'ArrowUp':
+            if (dy === 0) {
+                dx = 0;
+                dy = -1;
             }
-        }
-
+            break;
+        case 'ArrowDown':
+            if (dy === 0) {
+                dx = 0;
+                dy = 1;
+            }
+            break;
+        case 'ArrowLeft':
+            if (dx === 0) {
+                dx = -1;
+                dy = 0;
+            }
+            break;
+        case 'ArrowRight':
+            if (dx === 0) {
+                dx = 1;
+                dy = 0;
+            }
+            break;
+        case ' ': // 空格鍵
+            event.preventDefault(); // 防止頁面滾動
+            playTwice();
+            break;
+    }
+}
         function handleTouchStart(event) {
             touchStartX = event.touches[0].clientX;
             touchStartY = event.touches[0].clientY;
@@ -1166,53 +1200,58 @@ function updateAnswerSelect() {
         }
 
 
-        function startGame(speed) {
-            const selectedLesson = document.getElementById('lessonSelect').value;
-            const selectedQuestion = document.getElementById('questionSelect').value;
-            const selectedAnswer = document.getElementById('answerSelect').value;
-            const selectedBlockCount = parseInt(document.getElementById('blockCountSelect').value);
-			scaleElement(container);
 
-            if (selectedLesson === 'all') {
-                wordPairs = allWords;
-            } else {
-                wordPairs = lessons[selectedLesson];
-            }
+function startGame(speed) {
+  const selectedLesson = document.getElementById('lessonSelect').value;
+  const selectedQuestion = document.getElementById('questionSelect').value;
+  const selectedAnswer = document.getElementById('answerSelect').value;
+  const selectedBlockCount = parseInt(document.getElementById('blockCountSelect').value);
+  scaleElement(container);
 
-            // 更新 currentWord 和 currentCorrectTranslation 的設置
-            wordPairs = wordPairs.map(word => ({
-                ...word,
-                question: word[selectedQuestion] || '',
-                answer: word[selectedAnswer] || ''
-            }));
+    isGameRunning = true;
+    document.addEventListener('keydown', handleKeyDown);
 
-            switch (speed) {
-                case 'slow':
-                    gameSpeed = 400;
-                    break;
-                case 'normal':
-                    gameSpeed = 300;
-                    break;
-                case 'quick':
-                    gameSpeed = 250;
-                    break;
-                case 'fast':
-                    gameSpeed = 200;
-                    break;
-            }
-            document.getElementById('gameSettings').style.display = 'none';
-            document.getElementById('speedSelection').style.display = 'none';
-            canvas.style.display = 'block';
-            container.style.display = 'block';
-            correctFoodLabel.style.display = 'block';
-            wrongFoodLabel.style.display = 'block';
-			// 添加點擊事件監聽器
-			canvas.addEventListener('click', playTwice);
+  if (selectedLesson === 'all') {
+    wordPairs = allWords;
+  } else {
+    wordPairs = lessons[selectedLesson];
+  }
 
-			resetUnusedWords();
-			initGame();
-			gameInterval = setInterval(gameLoop, gameSpeed);
-		}
+  // 更新 currentWord 和 currentCorrectTranslation 的設置
+  wordPairs = wordPairs.map(word => ({
+    ...word,
+    question: word[selectedQuestion] || '',
+    answer: word[selectedAnswer] || ''
+  }));
+
+  switch (speed) {
+    case 'slow':
+      gameSpeed = 400;
+      break;
+    case 'normal':
+      gameSpeed = 300;
+      break;
+    case 'quick':
+      gameSpeed = 250;
+      break;
+    case 'fast':
+      gameSpeed = 200;
+      break;
+  }
+
+  document.getElementById('gameSettings').style.display = 'none';
+  canvas.style.display = 'block';
+  container.style.display = 'block';
+  correctFoodLabel.style.display = 'block';
+  wrongFoodLabel.style.display = 'block';
+
+  // 添加點擊事件監聽器
+  canvas.addEventListener('click', playTwice);
+
+  resetUnusedWords();
+  initGame();
+  gameInterval = setInterval(gameLoop, gameSpeed);
+}
 
         function updateScore() {
             scoreDisplay.textContent = `✨得分: ${score}`;
