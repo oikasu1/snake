@@ -153,7 +153,7 @@
 
 
     <div id="gameSettings">
-        <h2>🥷學校客事100句 [貪食蛇]</h2>
+        <h2>🥷學校客事100句 {貪食蛇}</h2>
         <div>
             <label for="lessonSelect">關卡：</label>
             <select id="lessonSelect"></select>
@@ -860,97 +860,92 @@ function updateAnswerSelect() {
 			unusedWords = [...wordPairs];
 		}
 
-        function generateNewWord() {
-			playAudio(rightAudio);
-		
-			// 停止當前正在播放的音檔（如果有）
-			if (currentAudio) {
-				currentAudio.pause();
-				currentAudio.currentTime = 0;
-			}		
+function generateNewWord() {
+    playAudio(rightAudio);
 
-			// 如果所有單詞都已經使用過，重置未使用單詞列表
-			if (unusedWords.length === 0) {
-				resetUnusedWords();
-			}
-			
+    // 如果所有單詞都已經使用過，重置未使用單詞列表
+    if (unusedWords.length === 0) {
+        resetUnusedWords();
+    }
 
-			// 從未使用的單詞中隨機選擇一個
-			const randomIndex = Math.floor(Math.random() * unusedWords.length);
-			const selectedWord = unusedWords[randomIndex];
+    // 從未使用的單詞中隨機選擇一個
+    const randomIndex = Math.floor(Math.random() * unusedWords.length);
+    const selectedWord = unusedWords[randomIndex];
 
-			// 從未使用單詞列表中移除這個單詞
-			unusedWords.splice(randomIndex, 1);
+    // 從未使用單詞列表中移除這個單詞
+    unusedWords.splice(randomIndex, 1);
 
-			currentWord = selectedWord.question;
-			currentCorrectTranslation = selectedWord.answer;
-			currentWordId = selectedWord.id;
+    currentWord = selectedWord.question;
+    currentCorrectTranslation = selectedWord.answer;
+    currentWordId = selectedWord.id;
 
-			wordDisplay.textContent = `🥷 ${currentWord}`;
+    wordDisplay.textContent = `🥷 ${currentWord}`;
 
-			// 檢查是否有對應的音檔並播放（如果之前已實現）
-
-			if (selectedWord['音檔']) {
-				const audioUrl = `https://oikasu1.github.io/kasu100/${selectedWord['音檔']}`;
-				const audio = new Audio(audioUrl);
-				
-				function playTwice() {
-					audio.play().catch(e => console.error("Audio play failed", e));
-					audio.onended = function() {
-						if (this.playCount === undefined) {
-							this.playCount = 1;
-							audio.play().catch(e => console.error("Audio play failed", e));
-						} else {
-							this.playCount = undefined;
-						}
-					};
-				}
-
-				playTwice();
-			}
-
-			// 獲取選擇的方塊數量
-			const selectedBlockCount = parseInt(document.getElementById('blockCountSelect').value);
-
-			// 生成正確答案的位置
-			correctFood = generateFoodPosition();
-
-			// 生成錯誤答案的位置，確保 y 座標不同
-			do {
-				wrongFood = generateFoodPosition();
-			} while (wrongFood.y === correctFood.y);
-
-			// 如果選擇了 3 個方塊，生成第二個錯誤答案的位置
-			if (selectedBlockCount === 3) {
-				do {
-					wrongFood2 = generateFoodPosition();
-				} while (
-					wrongFood2.y === correctFood.y ||
-					wrongFood2.y === wrongFood.y
-				);
-			} else {
-				wrongFood2 = null; // 確保在 2 方塊模式下 wrongFood2 為 null
-			}
-
-            // 設置食物標籤位置和內容
-            setFoodLabelPosition(correctFoodLabel, correctFood, currentCorrectTranslation);
-
-            // 為錯誤答案生成不同的翻譯
-            let wrongTranslations = wordPairs.filter(pair => pair.id !== selectedWord.id).map(pair => pair.answer);
-            currentWrongTranslation = wrongTranslations[Math.floor(Math.random() * wrongTranslations.length)];
-            setFoodLabelPosition(wrongFoodLabel, wrongFood, currentWrongTranslation);
-
-            if (selectedBlockCount === 3 && wrongFood2) {
-                let secondWrongTranslation;
-                do {
-                    secondWrongTranslation = wrongTranslations[Math.floor(Math.random() * wrongTranslations.length)];
-                } while (secondWrongTranslation === currentWrongTranslation);
-                setFoodLabelPosition(document.getElementById('wrongFoodLabel2'), wrongFood2, secondWrongTranslation);
-                document.getElementById('wrongFoodLabel2').style.display = 'block';
-            } else {
-                document.getElementById('wrongFoodLabel2').style.display = 'none';
-            }
+    // 檢查是否有對應的音檔並播放
+    if (selectedWord['音檔']) {
+        // 創建新的 Audio 對象
+        const audio = new Audio(`https://oikasu1.github.io/kasu100/${selectedWord['音檔']}`);
+        
+        // 播放音檔兩次
+        function playTwice() {
+            audio.play().catch(error => console.error('Audio playback failed', error));
+            audio.onended = function() {
+                if (this.playCount === undefined) {
+                    this.playCount = 1;
+                    audio.play().catch(error => console.error('Audio playback failed', error));
+                } else {
+                    this.playCount = undefined; // 重置計數
+                }
+            };
         }
+
+        // 確保音頻已經加載完成後再播放
+        audio.oncanplaythrough = playTwice;
+        audio.load();
+    }
+
+    // 獲取選擇的方塊數量
+    const selectedBlockCount = parseInt(document.getElementById('blockCountSelect').value);
+
+    // 生成正確答案的位置
+    correctFood = generateFoodPosition();
+
+    // 生成錯誤答案的位置，確保 y 座標不同
+    do {
+        wrongFood = generateFoodPosition();
+    } while (wrongFood.y === correctFood.y);
+
+    // 如果選擇了 3 個方塊，生成第二個錯誤答案的位置
+    if (selectedBlockCount === 3) {
+        do {
+            wrongFood2 = generateFoodPosition();
+        } while (
+            wrongFood2.y === correctFood.y ||
+            wrongFood2.y === wrongFood.y
+        );
+    } else {
+        wrongFood2 = null; // 確保在 2 方塊模式下 wrongFood2 為 null
+    }
+
+    // 設置食物標籤位置和內容
+    setFoodLabelPosition(correctFoodLabel, correctFood, currentCorrectTranslation);
+
+    // 為錯誤答案生成不同的翻譯
+    let wrongTranslations = wordPairs.filter(pair => pair.id !== selectedWord.id).map(pair => pair.answer);
+    currentWrongTranslation = wrongTranslations[Math.floor(Math.random() * wrongTranslations.length)];
+    setFoodLabelPosition(wrongFoodLabel, wrongFood, currentWrongTranslation);
+
+    if (selectedBlockCount === 3 && wrongFood2) {
+        let secondWrongTranslation;
+        do {
+            secondWrongTranslation = wrongTranslations[Math.floor(Math.random() * wrongTranslations.length)];
+        } while (secondWrongTranslation === currentWrongTranslation);
+        setFoodLabelPosition(document.getElementById('wrongFoodLabel2'), wrongFood2, secondWrongTranslation);
+        document.getElementById('wrongFoodLabel2').style.display = 'block';
+    } else {
+        document.getElementById('wrongFoodLabel2').style.display = 'none';
+    }
+}
 
         function generateFoodPosition() {
             const centerX = Math.floor(canvas.width / (2 * gridSize));
@@ -1077,11 +1072,10 @@ function updateAnswerSelect() {
 
         function endGame() {
 			playAudio(wrongAudio);
-			// 停止所有正在播放的音頻
-			const audios = document.getElementsByTagName('audio');
-			for(let audio of audios) {
-				audio.pause();
-				audio.currentTime = 0;
+			// 停止當前正在播放的音檔（如果有）
+			if (currentAudio) {
+				currentAudio.pause();
+				currentAudio.currentTime = 0;
 			}
             alert(`遊戲結束！你的得分是: ${score}`);
             container.style.display = 'none';
