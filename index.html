@@ -808,8 +808,8 @@ function updateAnswerSelect() {
 		  let scaleX;
 		  let scaleY;
 
-			scaleX = windowWidth / 400 * 0.9;
-			scaleY = windowHeight / 451 * 0.9;
+			scaleX = windowWidth / w * 0.9;
+			scaleY = windowHeight / h * 0.9;
 			container.style.marginTop = "10px";
 
 
@@ -824,11 +824,15 @@ function updateAnswerSelect() {
 		  e.style.transform = `scale(${scale})`;
 
 		}
-scaleElement(container);
+
 		// 視窗變動時，等比例放大
 		window.addEventListener('resize', function() {
 			scaleElement(container);
 		});
+
+window.addEventListener('load', function() {
+    setTimeout(() => scaleElement(container), 0);
+});
     </script>
 </body>
 
