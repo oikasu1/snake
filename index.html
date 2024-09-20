@@ -22,8 +22,8 @@
             background-color: white;
             border-radius: 10px;
             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-            padding: 30px;
-            margin-top: 30px;
+            padding: 10px;
+            margin-top: 10px;
             margin-bottom: 30px;
             max-width: 400px;
             width: 100%;
@@ -167,6 +167,9 @@
         #startButton:hover {
             background-color: #45a049;
         }
+
+
+
     </style>
 </head>
 
@@ -1150,6 +1153,7 @@ const myData = `
             document.getElementById('gameSettings').style.display = 'block';
             correctFoodLabel.style.display = 'none';
             wrongFoodLabel.style.display = 'none';
+			updateScrollBehavior();
         }
 
 
@@ -1221,13 +1225,29 @@ const myData = `
         }
 
 
+		function updateScrollBehavior() {
+			const gameSettings = document.getElementById('gameSettings');
+			const gameCanvas = document.getElementById('gameCanvas');
+
+			if (gameSettings.style.display !== 'none') {
+				// 設定頁面可滾動
+				document.body.style.overflow = 'auto';
+				document.body.style.position = 'static';
+			} else {
+				// 遊戲頁面不可滾動
+				document.body.style.overflow = 'hidden';
+				document.body.style.position = 'fixed';
+			}
+		}
 
         function startGame(speed) {
             const selectedLesson = document.getElementById('lessonSelect').value;
             const selectedQuestion = document.getElementById('questionSelect').value;
             const selectedAnswer = document.getElementById('answerSelect').value;
             const selectedBlockCount = parseInt(document.getElementById('blockCountSelect').value);
+
             resizeCanvas();
+			updateScrollBehavior();
 
             isGameRunning = true;
             document.addEventListener('keydown', handleKeyDown);
@@ -1355,6 +1375,8 @@ const myData = `
         // 在頁面載入和視窗大小改變時調用 resizeCanvas
         window.addEventListener('load', resizeCanvas);
         window.addEventListener('resize', resizeCanvas);
+
+		window.addEventListener('load', updateScrollBehavior);
     </script>
 </body>
 
