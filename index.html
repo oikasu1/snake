@@ -16,6 +16,7 @@
             margin: 0;
             background-color: #f5f5f5;
             color: #333;
+			user-select: none;
         }
 
         #gameSettings {
@@ -27,7 +28,7 @@
             margin-bottom: 30px;
             max-width: 400px;
             width: 100%;
-            user-select: none;
+			overflow-y: auto;            
         }
 
         #gameSettings h2 {
@@ -176,7 +177,7 @@
 <body>
 
     <div id="gameSettings">
-        <h2>🥷學校客事100句</h2>
+        <h2>🥷學校客事100</h2>
         <div>
             <label for="lessonSelect">關卡：</label>
             <select id="lessonSelect"></select>
@@ -1153,7 +1154,6 @@ const myData = `
             document.getElementById('gameSettings').style.display = 'block';
             correctFoodLabel.style.display = 'none';
             wrongFoodLabel.style.display = 'none';
-			updateScrollBehavior();
         }
 
 
@@ -1225,29 +1225,12 @@ const myData = `
         }
 
 
-		function updateScrollBehavior() {
-			const gameSettings = document.getElementById('gameSettings');
-			const gameCanvas = document.getElementById('gameCanvas');
-
-			if (gameSettings.style.display !== 'none') {
-				// 設定頁面可滾動
-				document.body.style.overflow = 'auto';
-				document.body.style.position = 'static';
-			} else {
-				// 遊戲頁面不可滾動
-				document.body.style.overflow = 'hidden';
-				document.body.style.position = 'fixed';
-			}
-		}
-
         function startGame(speed) {
             const selectedLesson = document.getElementById('lessonSelect').value;
             const selectedQuestion = document.getElementById('questionSelect').value;
             const selectedAnswer = document.getElementById('answerSelect').value;
             const selectedBlockCount = parseInt(document.getElementById('blockCountSelect').value);
-
             resizeCanvas();
-			updateScrollBehavior();
 
             isGameRunning = true;
             document.addEventListener('keydown', handleKeyDown);
@@ -1375,8 +1358,6 @@ const myData = `
         // 在頁面載入和視窗大小改變時調用 resizeCanvas
         window.addEventListener('load', resizeCanvas);
         window.addEventListener('resize', resizeCanvas);
-
-		window.addEventListener('load', updateScrollBehavior);
     </script>
 </body>
 
