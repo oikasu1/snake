@@ -260,10 +260,7 @@
                 <option value="fast">足緊 🚀</option>
             </select>
         </div>
-        <p>🏷️選方向：平板用滑螢幕，電腦用方向鍵。</p>
-        <p>🏷️語音：iPad點遊戲區發音。</p>
         <button id="startButton">貪食蛇 ;)</button>
-
     </div>
 
 
@@ -755,7 +752,8 @@ const myData = `
         let unusedWords = [];
         let isGameRunning = false;
 		let iosTouch = false;
-
+		let isSnakeYellow = false;
+		let colorChangeTimeout;
 
 
 
@@ -1160,21 +1158,21 @@ const myData = `
 			label.textContent = text;
 		}
 
-        function drawSnake() {
-            snake.forEach((segment, index) => {
-                ctx.fillStyle = 'green';
-                ctx.fillRect(segment.x * gridSize, segment.y * gridSize, gridSize - 2, gridSize - 2);
-
-                // 在蛇頭上顯示得分
-                if (index === 0) {
-                    ctx.fillStyle = 'green';
-                    ctx.font = '12px Arial';
-                    ctx.textAlign = 'center';
-                    ctx.textBaseline = 'middle';
-                    ctx.fillText(score.toString(), (segment.x * gridSize) + (gridSize / 2), (segment.y * gridSize) + (gridSize / 2));
-                }
-            });
-        }
+		function drawSnake() {
+		  snake.forEach((segment, index) => {
+			// 如果蛇處於"黃色狀態"，則使用黃色繪製
+			ctx.fillStyle = isSnakeYellow ? 'gold' : 'green';
+			ctx.fillRect(segment.x * gridSize, segment.y * gridSize, gridSize - 2, gridSize - 2);
+			// 在蛇頭上顯示得分
+			if (index === 0) {
+			  ctx.fillStyle = 'white';
+			  ctx.font = '12px Arial';
+			  ctx.textAlign = 'center';
+			  ctx.textBaseline = 'middle';
+			  ctx.fillText(score.toString(), (segment.x * gridSize) + (gridSize / 2), (segment.y * gridSize) + (gridSize / 2));
+			}
+		  });
+		}
 
 		function drawFood() {
 			ctx.fillStyle = 'red';
@@ -1191,28 +1189,40 @@ const myData = `
 		}
 
 		function moveSnake() {
-			const head = { x: snake[0].x + dx, y: snake[0].y + dy };
-			snake.unshift(head);
-			if (head.x === correctFood.x && head.y === correctFood.y) {
-				score++;
-				iosTouch = false;
-				updateWordStats(currentWordId, true);
-				generateNewWord();
-				updateScore();
-				
-				// 更新遊戲速度
-				gameSpeed = Math.max(150, baseSpeed - score*2);
-				clearInterval(gameInterval);
-				gameInterval = setInterval(gameLoop, gameSpeed);
-				
-			} else if (head.x === wrongFood.x && head.y === wrongFood.y ||
-				(wrongFood2 && head.x === wrongFood2.x && head.y === wrongFood2.y) ||
-				(wrongFood3 && head.x === wrongFood3.x && head.y === wrongFood3.y)) {
-				updateWordStats(currentWordId, false);
-				endGame();
-			} else {
-				snake.pop();
+		  const head = { x: snake[0].x + dx, y: snake[0].y + dy };
+		  snake.unshift(head);
+
+		  if (head.x === correctFood.x && head.y === correctFood.y) {
+			score++;
+			updateWordStats(currentWordId, true);
+			
+			// 將蛇變為黃色
+			isSnakeYellow = true;
+			
+			// 清除之前的計時器（如果存在）
+			if (colorChangeTimeout) {
+			  clearTimeout(colorChangeTimeout);
 			}
+			
+			// 設置新的計時器，1秒後將蛇變回綠色
+			colorChangeTimeout = setTimeout(() => {
+			  isSnakeYellow = false;
+			}, 500);
+
+			generateNewWord();
+			updateScore();
+			// 更新遊戲速度
+			gameSpeed = Math.max(150, baseSpeed - score * 2);
+			clearInterval(gameInterval);
+			gameInterval = setInterval(gameLoop, gameSpeed);
+		  } else if (head.x === wrongFood.x && head.y === wrongFood.y ||
+			(wrongFood2 && head.x === wrongFood2.x && head.y === wrongFood2.y) ||
+			(wrongFood3 && head.x === wrongFood3.x && head.y === wrongFood3.y)) {
+			updateWordStats(currentWordId, false);
+			endGame();
+		  } else {
+			snake.pop();
+		  }
 		}
 
         function gameLoop() {
@@ -1233,12 +1243,16 @@ const myData = `
         function endGame() {
             playAudio(wrongAudio);
 			iosTouch = false;
-            // 停止當前正在播放的音檔（如果有）
+
+	  	   if (colorChangeTimeout) {
+			 clearTimeout(colorChangeTimeout);
+		   }
+
             if (currentAudio) {
                 currentAudio.pause();
                 currentAudio.currentTime = 0;
             }
-            showCustomModal('遊戲結束', `你的得分是: ${score}`, score);
+            showCustomModal('🥷遊戲煞啊', `🎉你得著: ${score} 分`, score);
             clearInterval(gameInterval);
             isGameRunning = false;
             document.removeEventListener('keydown', handleKeyDown);
@@ -1516,10 +1530,6 @@ const myData = `
 			}
 		  }
 		}
-
-
-
-
     </script>
 </body>
 
