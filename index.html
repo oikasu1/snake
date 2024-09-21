@@ -1180,6 +1180,9 @@ const myData = `
 				case 'fast':
 					gameSpeed = 200;
 					break;
+				case 'faster':
+					gameSpeed = 180;
+					break;
 			}
 			gameInterval = setInterval(gameLoop, gameSpeed);
 		}
@@ -1368,7 +1371,12 @@ const myData = `
 				{ emoji: '🚲', speed: 'slow' },
 				{ emoji: '🚗', speed: 'normal' },
 				{ emoji: '🛩️', speed: 'quick' },
-				{ emoji: '🚀', speed: 'fast' }
+				{ emoji: '🛩️', speed: 'quick' },
+				{ emoji: '🚀', speed: 'fast' },
+				{ emoji: '🚀', speed: 'fast' },
+				{ emoji: '🚀', speed: 'fast' },
+				{ emoji: '🛸', speed: 'faster' },
+				{ emoji: '🛸', speed: 'faster' }
 			];
 			speedIcon = speeds[Math.floor(Math.random() * speeds.length)];
 
@@ -1376,10 +1384,8 @@ const myData = `
 			const centerX = Math.floor((canvas.width / gridSize) / 2);
 			const centerY = Math.floor((canvas.height / gridSize) / 2);
 			
-			// 在中心位置的基礎上隨機偏移 -1, 0 或 1 個格子
-			speedIcon.x = centerX + Math.floor(Math.random() * 3) ;
-			speedIcon.y = centerY + Math.floor(Math.random() * 3) ;
-
+			speedIcon.x = centerX + Math.floor(Math.random() * 5) - 2;
+			speedIcon.y = centerY + Math.floor(Math.random() * 5) - 2;
 
 			speedIconVisible = true;
 			
