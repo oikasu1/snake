@@ -109,6 +109,7 @@
             position: relative;
             text-align: center;
 			margin: 0;
+			transition: transform 0.3s ease;
         }
 
         #header {
@@ -682,12 +683,8 @@ const myData = `
         let allWords = [];
         let unusedWords = [];
         let isGameRunning = false;
-		let speedIcon = null;
-		let speedIconTimer = null;
-		let speedIconVisible = false;
-		let currentScale = 1;
-		let obstacle = null;
-		let obstacleTimer = null;
+
+
 
 
         function playTwice() {
@@ -706,48 +703,58 @@ const myData = `
             }
         }
 
-        function processMyData() {
-            const lines = myData.trim().split('\n');
-            headers = lines[0].trim().split(/\t/);
-            let lessonCount = 0;
-            let wordId = 0;
+		function processMyData() {
+			const lines = myData.trim().split('\n');
+			headers = lines[0].trim().split(/\t/);
+			let wordId = 0;
+			allWords = []; // 重置
+			lessons = {}; // 重置 lessons 對象
 
-            allWords = []; // 重置
-            lines.slice(1).forEach((line, index) => {
-                const parts = line.trim().split(/\t/);
-                if (parts.length >= 3) {
-                    const [lesson, ...rest] = parts;
-                    if (!lessons[lesson]) {
-                        lessons[lesson] = [];
-                        lessonCount++;
-                    }
-                    const newWord = {
-                        id: wordId++,
-                        lesson,
-                        ...Object.fromEntries(headers.slice(1).map((header, i) => [header, rest[i] || '']))
-                    };
-                    lessons[lesson].push(newWord);
-                    allWords.push(newWord);
-                } else if (parts.length === 2) {
-                    const [value1, value2] = parts;
-                    const lesson = `第${Math.floor(index / 10) + 1}組`;
-                    if (!lessons[lesson]) {
-                        lessons[lesson] = [];
-                        lessonCount++;
-                    }
-                    const newWord = {
-                        id: wordId++,
-                        lesson,
-                        [headers[0]]: value1,
-                        [headers[1]]: value2
-                    };
-                    lessons[lesson].push(newWord);
-                    allWords.push(newWord);
-                }
-            });
-            populateSelects();
-        }
+			// 輔助函數：檢查單詞是否重複
+			const isDuplicate = (word, wordList) => {
+				return wordList.some(w => w.國語 === word.國語 && w.客語 === word.客語);
+			};
 
+			lines.slice(1).forEach((line, index) => {
+				const parts = line.trim().split(/\t/);
+				if (parts.length >= 3) {
+					const [lesson, ...rest] = parts;
+					if (!lessons[lesson]) {
+						lessons[lesson] = [];
+					}
+					const newWord = {
+						id: wordId++,
+						lesson,
+						...Object.fromEntries(headers.slice(1).map((header, i) => [header, rest[i] || '']))
+					};
+					if (!isDuplicate(newWord, lessons[lesson])) {
+						lessons[lesson].push(newWord);
+						if (!isDuplicate(newWord, allWords)) {
+							allWords.push(newWord);
+						}
+					}
+				} else if (parts.length === 2) {
+					const [value1, value2] = parts;
+					const lesson = `第${Math.floor(index / 10) + 1}組`;
+					if (!lessons[lesson]) {
+						lessons[lesson] = [];
+					}
+					const newWord = {
+						id: wordId++,
+						lesson,
+						[headers[0]]: value1,
+						[headers[1]]: value2
+					};
+					if (!isDuplicate(newWord, lessons[lesson])) {
+						lessons[lesson].push(newWord);
+						if (!isDuplicate(newWord, allWords)) {
+							allWords.push(newWord);
+						}
+					}
+				}
+			});
+			populateSelects();
+		}
         function populateSelects() {
             const lessonSelect = document.getElementById('lessonSelect');
             const questionSelect = document.getElementById('questionSelect');
@@ -761,7 +768,7 @@ const myData = `
             // 添加"全部"選項到課別
             const allOption = document.createElement('option');
             allOption.value = 'all';
-            allOption.textContent = '歸下 (全部)';
+            allOption.textContent = '全部';
             lessonSelect.appendChild(allOption);
 
             // 添加其他課程選項
@@ -886,24 +893,6 @@ const myData = `
             localStorage.setItem(`word_${wordId}`, JSON.stringify(stats));
         }
 
-        function populateLessonSelect() {
-            const lessonSelect = document.getElementById('lessonSelect');
-
-            // 添加"全部"選項
-            const allOption = document.createElement('option');
-            allOption.value = 'all';
-            allOption.textContent = '全部';
-            lessonSelect.appendChild(allOption);
-
-            // 添加其他課程選項
-            for (const lesson in lessons) {
-                const option = document.createElement('option');
-                option.value = lesson;
-                option.textContent = lesson;
-                lessonSelect.appendChild(option);
-            }
-        }
-
         // 在文檔加載完成後執行
         window.onload = function() {
             processMyData();
@@ -928,30 +917,7 @@ const myData = `
             startTime = Date.now();
             resetUnusedWords();
             generateNewWord();
-			scheduleNextObstacle();
         }
-
-
-		function scheduleNextObstacle() {
-			clearTimeout(obstacleTimer);
-			obstacleTimer = setTimeout(() => {
-				generateObstacle();
-				obstacleTimer = setTimeout(() => {
-					obstacle = null;
-					scheduleNextObstacle();
-				}, 8000); // 消失
-			}, 15000); // 出現
-		}
-
-		function generateObstacle() {
-			const obstacles = ['🪨', '🪵', '🗻'];
-			const obstacleType = obstacles[Math.floor(Math.random() * obstacles.length)];
-			obstacle = {
-				x: Math.floor(Math.random() * (canvas.width / gridSize)),
-				y: Math.floor(Math.random() * (canvas.height / gridSize)),
-				type: obstacleType
-			};
-		}
 
         function resetUnusedWords() {
             unusedWords = [...wordPairs];
@@ -1107,7 +1073,7 @@ const myData = `
 
 
 		function setFoodLabelPosition(label, food, text) {
-			const labelOffset = 10; // 可以根據需要調整這個值
+			const labelOffset = 5; // 可以根據需要調整這個值
 			const canvasMiddle = canvas.width / 2;
 
 			if (food.x * gridSize >= canvasMiddle) {
@@ -1121,19 +1087,9 @@ const myData = `
 			}
 
 			// 設置垂直位置和文字
-			label.style.top = `${food.y * gridSize + 40}px`;
+			label.style.top = `${food.y * gridSize + 44}px`;
 			label.textContent = text;
-			// 保存原始位置
-			label.setAttribute('data-original-top', label.style.top);
-			label.setAttribute('data-original-left', label.style.left);
-
-			// 應用當前縮放
-			label.style.top = `${parseInt(label.style.top) * currentScale}px`;
-			label.style.left = `${parseInt(label.style.left) * currentScale}px`;
-			label.style.fontSize = `${18 * currentScale}px`; // 假設原始字體大小為18px
 		}
-
-
 
         function drawSnake() {
             snake.forEach((segment, index) => {
@@ -1163,24 +1119,6 @@ const myData = `
 			if (selectedBlockCount === 4 && wrongFood3) {
 				ctx.fillRect(wrongFood3.x * gridSize, wrongFood3.y * gridSize, gridSize - 2, gridSize - 2);
 			}
-			if (speedIconVisible && speedIcon) {
-				const scaledGridSize = gridSize / currentScale;
-				ctx.font = `${scaledGridSize}px Arial`;
-				ctx.textAlign = 'center';
-				ctx.textBaseline = 'middle';
-				ctx.fillText(speedIcon.emoji, 
-							 speedIcon.x * gridSize + gridSize / 2, 
-							 speedIcon.y * gridSize + gridSize / 2);
-			}
-			if (obstacle) {
-				const scaledGridSize = gridSize / currentScale;
-				ctx.font = `${scaledGridSize}px Arial`;
-				ctx.textAlign = 'center';
-				ctx.textBaseline = 'middle';
-				ctx.fillText(obstacle.type, 
-					obstacle.x * gridSize + gridSize / 2, 
-					obstacle.y * gridSize + gridSize / 2);
-			}
 		}
 
 		function moveSnake() {
@@ -1188,49 +1126,19 @@ const myData = `
 			snake.unshift(head);
 
 			if (head.x === correctFood.x && head.y === correctFood.y) {
-						score++;
-						updateWordStats(currentWordId, true);
-						generateNewWord();
-						updateScore();
+				score++;
+				updateWordStats(currentWordId, true);
+				generateNewWord();
+				updateScore();
 			} else if (head.x === wrongFood.x && head.y === wrongFood.y ||
 					   (wrongFood2 && head.x === wrongFood2.x && head.y === wrongFood2.y) ||
-					   (wrongFood3 && head.x === wrongFood3.x && head.y === wrongFood3.y) ||
-					   (obstacle && head.x === obstacle.x && head.y === obstacle.y)) {
+					   (wrongFood3 && head.x === wrongFood3.x && head.y === wrongFood3.y)) {
 				updateWordStats(currentWordId, false);
 				endGame();
-			} else if (speedIconVisible && head.x === speedIcon.x && head.y === speedIcon.y) {
-				// 吃到速度圖示
-				speedIconVisible = false;
-				clearTimeout(speedIconTimer);
-				changeSpeed(speedIcon.speed);
 			} else {
 				snake.pop();
 			}
 		}
-
-
-		function changeSpeed(speed) {
-			clearInterval(gameInterval);
-			switch (speed) {
-				case 'slow':
-					gameSpeed = 400;
-					break;
-				case 'normal':
-					gameSpeed = 300;
-					break;
-				case 'quick':
-					gameSpeed = 250;
-					break;
-				case 'fast':
-					gameSpeed = 200;
-					break;
-				case 'faster':
-					gameSpeed = 180;
-					break;
-			}
-			gameInterval = setInterval(gameLoop, gameSpeed);
-		}
-
 
         function gameLoop() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -1255,8 +1163,6 @@ const myData = `
                 currentAudio.pause();
                 currentAudio.currentTime = 0;
             }
-			clearTimeout(speedIconTimer);
-			clearTimeout(obstacleTimer);
             alert(`遊戲結束！你的得分是: ${score}`);
             container.style.display = 'none';
             clearInterval(gameInterval);
@@ -1406,41 +1312,7 @@ const myData = `
             resetUnusedWords();
             initGame();
             gameInterval = setInterval(gameLoop, gameSpeed);
-			speedIconTimer = setTimeout(showSpeedIcon, 15000);
         }
-
-
-
-		function showSpeedIcon() {
-			const speeds = [
-				{ emoji: '🚲', speed: 'slow' },
-				{ emoji: '🚗', speed: 'normal' },
-				{ emoji: '🛩️', speed: 'quick' },
-				{ emoji: '🛩️', speed: 'quick' },
-				{ emoji: '🚀', speed: 'fast' },
-				{ emoji: '🚀', speed: 'fast' },
-				{ emoji: '🚀', speed: 'fast' },
-				{ emoji: '🛸', speed: 'faster' },
-				{ emoji: '🛸', speed: 'faster' }
-			];
-			speedIcon = speeds[Math.floor(Math.random() * speeds.length)];
-
-			// 計算接近中心的格子位置
-			const centerX = Math.floor((canvas.width / gridSize) / 2);
-			const centerY = Math.floor((canvas.height / gridSize) / 2);
-			
-			speedIcon.x = centerX + Math.floor(Math.random() * 5) - 2;
-			speedIcon.y = centerY + Math.floor(Math.random() * 5) - 2;
-
-			speedIconVisible = true;
-			
-			// 10秒後隱藏圖示
-			setTimeout(() => {
-				speedIconVisible = false;
-				// 20秒後再次顯示圖示
-				speedIconTimer = setTimeout(showSpeedIcon, 15000);
-			}, 10000);
-		}
 
         function updateScore() {
             scoreDisplay.textContent = `✨得分: ${score}`;
@@ -1463,106 +1335,67 @@ const myData = `
 
 
 
+        function resizeCanvas() {
+            const canvas = document.getElementById('gameCanvas');
+            const container = document.getElementById('container');
+            const windowWidth = window.innerWidth;
+            const windowHeight = window.innerHeight;
 
-function resizeCanvas() {
-    const canvas = document.getElementById('gameCanvas');
-    const container = document.getElementById('container');
-    const windowWidth = window.innerWidth;
-    const windowHeight = window.innerHeight;
+            let canvasWidth, canvasHeight, containerWidth, containerHeight;
 
-    let canvasWidth, canvasHeight, containerWidth, containerHeight;
+            if (windowWidth < windowHeight) { // 直式
+                if (windowWidth < 600) { // 小螢幕手機
+                    canvasWidth = 300;
+                    canvasHeight = 400;
+                    containerWidth = 304;
+                    containerHeight = 451;
+                } else { // 大螢幕或平板
+                    canvasWidth = 400;
+                    canvasHeight = 400;
+                    containerWidth = 400;
+                    containerHeight = 451;
+                }
+            } else { // 橫式
+                if (windowHeight < 450) { // 小螢幕手機
+                    canvasWidth = 450;
+                    canvasHeight = 250;
+                    containerWidth = 454;
+                    containerHeight = 301;
+                } else { // 大螢幕或平板
+                    canvasWidth = 400;
+                    canvasHeight = 400;
+                    containerWidth = 400;
+                    containerHeight = 451;
+                }
+            }
 
-    if (windowWidth < windowHeight) { // 直式
-        if (windowWidth < 600) { // 小螢幕手機
-            canvasWidth = 300;
-            canvasHeight = 400;
-            containerWidth = 304;
-            containerHeight = 451;
-        } else { // 大螢幕或平板
-            canvasWidth = 400;
-            canvasHeight = 400;
-            containerWidth = 400;
-            containerHeight = 451;
+            canvas.width = canvasWidth;
+            canvas.height = canvasHeight;
+
+            // 更新全局變量 gridSize
+            gridSize = Math.min(canvasWidth, canvasHeight) / 20;
+
+            scaleElement(container, containerWidth, containerHeight);
         }
-    } else { // 橫式
-        if (windowHeight < 450) { // 小螢幕手機
-            canvasWidth = 450;
-            canvasHeight = 250;
-            containerWidth = 454;
-            containerHeight = 301;
-        } else { // 大螢幕或平板
-            canvasWidth = 400;
-            canvasHeight = 400;
-            containerWidth = 400;
-            containerHeight = 451;
+
+
+        function scaleElement(e, w, h) {
+            const windowWidth = window.innerWidth;
+            const windowHeight = window.innerHeight;
+
+            let scaleX = windowWidth / w * 0.9;
+            let scaleY = windowHeight / h * 0.9;
+
+            const scale = Math.min(scaleX, scaleY);
+
+            e.style.transform = `scale(${scale})`;
+            container.style.marginTop = "10px";
         }
-    }
-
-    canvas.width = canvasWidth;
-    canvas.height = canvasHeight;
-
-    // 更新全局變量 gridSize
-    gridSize = Math.min(canvasWidth, canvasHeight) / 20;
-
-    scaleElement(container, containerWidth, containerHeight);
-
-    if (isGameRunning) {
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        drawSnake();
-        drawFood();
-    }
-}
-
-
-
-function scaleElement(e, w, h) {
-    const windowWidth = window.innerWidth;
-    const windowHeight = window.innerHeight;
-
-    let scaleX = windowWidth / w;
-    let scaleY = windowHeight / h;
-
-    // 允許放大超過1，但保留一些邊距
-    currentScale = Math.min(scaleX, scaleY) * 0.95;
-
-    e.style.transform = `scale(${currentScale})`;
-    e.style.transformOrigin = 'top left';
-    e.style.position = 'absolute';
-    e.style.left = `${(windowWidth - w * currentScale) / 2}px`;
-    e.style.top = `${(windowHeight - h * currentScale) / 2}px`;
-
-    // 調整字體大小以適應縮放
-    document.body.style.fontSize = `${16 * currentScale}px`;
-
-    // 更新食物標籤的位置
-    updateFoodLabelsPosition();
-}
-
-// 新增一個函數來更新食物標籤的位置
-function updateFoodLabelsPosition() {
-    const labels = document.querySelectorAll('.food-label');
-    labels.forEach(label => {
-        const originalTop = parseInt(label.getAttribute('data-original-top') || label.style.top);
-        const originalLeft = parseInt(label.getAttribute('data-original-left') || label.style.left);
-        if (!label.getAttribute('data-original-top')) {
-            label.setAttribute('data-original-top', originalTop);
-            label.setAttribute('data-original-left', originalLeft);
-        }
-        label.style.top = `${originalTop * currentScale}px`;
-        label.style.left = `${originalLeft * currentScale}px`;
-        label.style.fontSize = `${18 * currentScale}px`; // 假設原始字體大小為18px
-    });
-}
 
         // 在頁面載入和視窗大小改變時調用 resizeCanvas
         window.addEventListener('load', resizeCanvas);
         window.addEventListener('resize', resizeCanvas);
-/*
-六、分別 00百句	這是什麼色	這係麼个色	liaˊ he bbooˊ gaiˆ sedˊ	ˊ  ˊ ˆ ˊ	k251.mp3
-六_分別 19顏色	這是什麼色	這係麼个色	liaˊ he bbooˊ gaiˆ sedˊ	ˊ  ˊ ˆ ˊ	k251.mp3
-*/
-	</script>
+    </script>
 </body>
 
 </html>
-
