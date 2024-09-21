@@ -170,7 +170,7 @@
 <body>
 
     <div id="gameSettings">
-        <h2>🥷學校-客事💯</h2>
+        <h2>🥷學校客事💯</h2>
         <div>
             <label for="lessonSelect">關卡：</label>
             <select id="lessonSelect"></select>
@@ -223,6 +223,29 @@
     </div>
 
     <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const wordDisplay = document.getElementById('wordDisplay');
+        const scoreDisplay = document.getElementById('scoreDisplay');
+        const timeDisplay = document.getElementById('timeDisplay');
+        const correctFoodLabel = document.getElementById('correctFoodLabel');
+        const wrongFoodLabel = document.getElementById('wrongFoodLabel');
+        const container = document.getElementById('container');
+
+        let gridSize = 20;
+        let snake, correctFood, wrongFood, dx, dy, score, gameSpeed, gameInterval, elapsedTime, startTime;
+        let currentWord, currentCorrectTranslation, currentWrongTranslation;
+        let isAdjacent;
+
+        const rightAudio = new Audio('right.mp3');
+        const wrongAudio = new Audio('wrong.mp3');
+
+        function playAudio(audio) {
+            audio.currentTime = 0;
+            audio.play();
+        }
+
+
 
 const myData = `
 分類	國語	客語	拼音	注音	音檔
@@ -652,20 +675,6 @@ const myData = `
 八_關心 24鼓勵	你很厲害	你真厲害	henˋ zhinˇ li hoi	ˋ ˇ  	k324.mp3
 `;
 
-        const canvas = document.getElementById('gameCanvas');
-        const ctx = canvas.getContext('2d');
-        const wordDisplay = document.getElementById('wordDisplay');
-        const scoreDisplay = document.getElementById('scoreDisplay');
-        const timeDisplay = document.getElementById('timeDisplay');
-        const correctFoodLabel = document.getElementById('correctFoodLabel');
-        const wrongFoodLabel = document.getElementById('wrongFoodLabel');
-        const container = document.getElementById('container');
-
-        let gridSize = 20;
-        let snake, correctFood, wrongFood, dx, dy, score, gameSpeed, gameInterval, elapsedTime, startTime;
-        let currentWord, currentCorrectTranslation, currentWrongTranslation;
-        let isAdjacent;
-
         let currentAudio = null;
         let headers = [];
         let wordPairs = [];
@@ -680,13 +689,7 @@ const myData = `
 		let obstacle = null;
 		let obstacleTimer = null;
 
-        const rightAudio = new Audio('right.mp3');
-        const wrongAudio = new Audio('wrong.mp3');
 
-        function playAudio(audio) {
-            audio.currentTime = 0;
-            audio.play();
-        }
         function playTwice() {
             if (currentAudio) {
                 currentAudio.pause();
@@ -1120,7 +1123,17 @@ const myData = `
 			// 設置垂直位置和文字
 			label.style.top = `${food.y * gridSize + 40}px`;
 			label.textContent = text;
+			// 保存原始位置
+			label.setAttribute('data-original-top', label.style.top);
+			label.setAttribute('data-original-left', label.style.left);
+
+			// 應用當前縮放
+			label.style.top = `${parseInt(label.style.top) * currentScale}px`;
+			label.style.left = `${parseInt(label.style.left) * currentScale}px`;
+			label.style.fontSize = `${18 * currentScale}px`; // 假設原始字體大小為18px
 		}
+
+
 
         function drawSnake() {
             snake.forEach((segment, index) => {
@@ -1450,81 +1463,104 @@ const myData = `
 
 
 
-        function resizeCanvas() {
-            const canvas = document.getElementById('gameCanvas');
-            const container = document.getElementById('container');
-            const windowWidth = window.innerWidth;
-            const windowHeight = window.innerHeight;
 
-            let canvasWidth, canvasHeight, containerWidth, containerHeight;
+function resizeCanvas() {
+    const canvas = document.getElementById('gameCanvas');
+    const container = document.getElementById('container');
+    const windowWidth = window.innerWidth;
+    const windowHeight = window.innerHeight;
 
-            if (windowWidth < windowHeight) { // 直式
-                if (windowWidth < 600) { // 小螢幕手機
-                    canvasWidth = 300;
-                    canvasHeight = 400;
-                    containerWidth = 304;
-                    containerHeight = 451;
-                } else { // 大螢幕或平板
-                    canvasWidth = 400;
-                    canvasHeight = 400;
-                    containerWidth = 400;
-                    containerHeight = 451;
-                }
-            } else { // 橫式
-                if (windowHeight < 450) { // 小螢幕手機
-                    canvasWidth = 450;
-                    canvasHeight = 250;
-                    containerWidth = 454;
-                    containerHeight = 301;
-                } else { // 大螢幕或平板
-                    canvasWidth = 400;
-                    canvasHeight = 400;
-                    containerWidth = 400;
-                    containerHeight = 451;
-                }
-            }
+    let canvasWidth, canvasHeight, containerWidth, containerHeight;
 
-            canvas.width = canvasWidth;
-            canvas.height = canvasHeight;
-
-
-			// 更新全局變量 gridSize
-			gridSize = Math.min(canvasWidth, canvasHeight) / 20;
-
-			scaleElement(container, containerWidth, containerHeight);
-
-			// 在縮放後調整 container 的位置
-			container.style.position = 'absolute';
-			container.style.left = '50%';
-			container.style.top = '50%';
-			container.style.transform = `translate(-50%, -50%) scale(${currentScale})`;
-
-			if (isGameRunning) {
-				ctx.clearRect(0, 0, canvas.width, canvas.height);
-				drawSnake();
-				drawFood();
-			}
-		}
-
-
-        function scaleElement(e, w, h) {
-            const windowWidth = window.innerWidth;
-            const windowHeight = window.innerHeight;
-
-            let scaleX = windowWidth / w * 0.9;
-            let scaleY = windowHeight / h * 0.9;
-
-            const scale = Math.min(scaleX, scaleY);
-
-			e.style.transform = `scale(${currentScale})`;
-			e.style.transformOrigin = 'top center';
-			container.style.marginTop = "10px";
+    if (windowWidth < windowHeight) { // 直式
+        if (windowWidth < 600) { // 小螢幕手機
+            canvasWidth = 300;
+            canvasHeight = 400;
+            containerWidth = 304;
+            containerHeight = 451;
+        } else { // 大螢幕或平板
+            canvasWidth = 400;
+            canvasHeight = 400;
+            containerWidth = 400;
+            containerHeight = 451;
         }
+    } else { // 橫式
+        if (windowHeight < 450) { // 小螢幕手機
+            canvasWidth = 450;
+            canvasHeight = 250;
+            containerWidth = 454;
+            containerHeight = 301;
+        } else { // 大螢幕或平板
+            canvasWidth = 400;
+            canvasHeight = 400;
+            containerWidth = 400;
+            containerHeight = 451;
+        }
+    }
+
+    canvas.width = canvasWidth;
+    canvas.height = canvasHeight;
+
+    // 更新全局變量 gridSize
+    gridSize = Math.min(canvasWidth, canvasHeight) / 20;
+
+    scaleElement(container, containerWidth, containerHeight);
+
+    if (isGameRunning) {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        drawSnake();
+        drawFood();
+    }
+}
+
+
+
+function scaleElement(e, w, h) {
+    const windowWidth = window.innerWidth;
+    const windowHeight = window.innerHeight;
+
+    let scaleX = windowWidth / w;
+    let scaleY = windowHeight / h;
+
+    // 允許放大超過1，但保留一些邊距
+    currentScale = Math.min(scaleX, scaleY) * 0.95;
+
+    e.style.transform = `scale(${currentScale})`;
+    e.style.transformOrigin = 'top left';
+    e.style.position = 'absolute';
+    e.style.left = `${(windowWidth - w * currentScale) / 2}px`;
+    e.style.top = `${(windowHeight - h * currentScale) / 2}px`;
+
+    // 調整字體大小以適應縮放
+    document.body.style.fontSize = `${16 * currentScale}px`;
+
+    // 更新食物標籤的位置
+    updateFoodLabelsPosition();
+}
+
+// 新增一個函數來更新食物標籤的位置
+function updateFoodLabelsPosition() {
+    const labels = document.querySelectorAll('.food-label');
+    labels.forEach(label => {
+        const originalTop = parseInt(label.getAttribute('data-original-top') || label.style.top);
+        const originalLeft = parseInt(label.getAttribute('data-original-left') || label.style.left);
+        if (!label.getAttribute('data-original-top')) {
+            label.setAttribute('data-original-top', originalTop);
+            label.setAttribute('data-original-left', originalLeft);
+        }
+        label.style.top = `${originalTop * currentScale}px`;
+        label.style.left = `${originalLeft * currentScale}px`;
+        label.style.fontSize = `${18 * currentScale}px`; // 假設原始字體大小為18px
+    });
+}
 
         // 在頁面載入和視窗大小改變時調用 resizeCanvas
         window.addEventListener('load', resizeCanvas);
         window.addEventListener('resize', resizeCanvas);
-
+/*
+六、分別 00百句	這是什麼色	這係麼个色	liaˊ he bbooˊ gaiˆ sedˊ	ˊ  ˊ ˆ ˊ	k251.mp3
+六_分別 19顏色	這是什麼色	這係麼个色	liaˊ he bbooˊ gaiˆ sedˊ	ˊ  ˊ ˆ ˊ	k251.mp3
+*/
 	</script>
 </body>
 
