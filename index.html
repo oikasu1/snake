@@ -740,6 +740,7 @@ const myData = `
         let allWords = [];
         let unusedWords = [];
         let isGameRunning = false;
+		let iosTouch = false;
 
 
 
@@ -978,8 +979,7 @@ const myData = `
             unusedWords = [...wordPairs];
         }
 
-        function generateNewWord() {
-			iosTouch = 0;
+        function generateNewWord() {			
             playAudio(rightAudio);
 
             // 停止當前正在播放的音檔（如果有）
@@ -1181,6 +1181,7 @@ const myData = `
 			snake.unshift(head);
 			if (head.x === correctFood.x && head.y === correctFood.y) {
 				score++;
+				iosTouch = false;
 				updateWordStats(currentWordId, true);
 				generateNewWord();
 				updateScore();
@@ -1217,7 +1218,7 @@ const myData = `
 
         function endGame() {
             playAudio(wrongAudio);
-			iosTouch = 0;
+			iosTouch = false;
             // 停止當前正在播放的音檔（如果有）
             if (currentAudio) {
                 currentAudio.pause();
@@ -1269,7 +1270,7 @@ const myData = `
             }
         }
 
-		let iosTouch = 0;  //here
+		
 
 		function isIOS() {
 			const userAgent = navigator.userAgent.toLowerCase();
@@ -1282,13 +1283,12 @@ const myData = `
         function handleTouchStart(event) {
             touchStartX = event.touches[0].clientX;
             touchStartY = event.touches[0].clientY;
-			playTwice();
-			/*
-			if (isIOS() && iosTouch == 0) {
+
+			if (isIOS() && !iosTouch) {
 				playTwice();
-				iosTouch = 1;
+				iosTouch = true;
 			}
-			*/
+
         }
 
         function handleTouchEnd(event) {
