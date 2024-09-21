@@ -17,6 +17,7 @@
             background-color: #f5f5f5;
             color: #333;
 			user-select: none;
+			overflow-y: auto;
         }
 
         #gameSettings {
@@ -27,8 +28,7 @@
             margin-top: 10px;
             margin-bottom: 30px;
             max-width: 400px;
-            width: 100%;
-			overflow-y: auto;            
+            width: 100%;			          
         }
 
         #gameSettings h2 {
@@ -177,7 +177,7 @@
 <body>
 
     <div id="gameSettings">
-        <h2>🥷學校客事100</h2>
+        <h2>🥷學校客事100！</h2>
         <div>
             <label for="lessonSelect">關卡：</label>
             <select id="lessonSelect"></select>
@@ -900,8 +900,9 @@ const myData = `
 
             // 為開始遊戲按鈕添加事件監聽器
             document.getElementById('startButton').addEventListener('click', function() {
-                const speed = document.getElementById('speedSelect').value;
+                const speed = document.getElementById('speedSelect').value;				
                 startGame(speed);
+				document.addEventListener('click', playTwice);
             });
         };
 
@@ -923,6 +924,7 @@ const myData = `
         }
 
         function generateNewWord() {
+			iosTouch = 0;
             playAudio(rightAudio);
 
             // 停止當前正在播放的音檔（如果有）
@@ -1042,32 +1044,25 @@ const myData = `
             return positions;
         }
 
-        function setFoodLabelPosition(label, food, text) {
-            const labelOffset = 25;
-            const rightBoundary = canvas.width / gridSize;
-            const leftBoundary = 0;
 
-            if (food.x > rightBoundary - 5) {
-                // food 靠近右邊界時，label 在 food 左邊
-                label.style.left = '';
-                label.style.right = `${(rightBoundary - food.x - 1) * gridSize + labelOffset}px`;
-            } else if (food.x < 5) {
-                // food 靠近左邊界時，label 在 food 右邊
-                label.style.right = '';
-                label.style.left = `${food.x * gridSize + labelOffset}px`;
-            } else if (isAdjacent && food === correctFood) {
-                // 如果兩個食物水平相近，並且是正確食物，label 在食物上方
-                label.style.left = `${food.x * gridSize}px`;
-                label.style.right = '';
-            } else {
-                // food 不靠近邊界時，label 在 food 上方
-                label.style.left = `${food.x * gridSize + labelOffset}px`;
-                label.style.right = '';
-            }
+		function setFoodLabelPosition(label, food, text) {
+			const labelOffset = 10; // 可以根據需要調整這個值
+			const canvasMiddle = canvas.width / 2;
 
-            label.style.top = `${food.y * gridSize + 45}px`;
-            label.textContent = text;
-        }
+			if (food.x * gridSize >= canvasMiddle) {
+				// 食物在畫布右半部分，標籤放在左邊
+				label.style.right = `${canvas.width - food.x * gridSize + labelOffset}px`;
+				label.style.left = 'auto';
+			} else {
+				// 食物在畫布左半部分，標籤放在右邊
+				label.style.left = `${food.x * gridSize + gridSize + labelOffset}px`;
+				label.style.right = 'auto';
+			}
+
+			// 設置垂直位置和文字
+			label.style.top = `${food.y * gridSize + 40}px`;
+			label.textContent = text;
+		}
 
         function drawSnake() {
             snake.forEach((segment, index) => {
@@ -1135,6 +1130,7 @@ const myData = `
 
         function endGame() {
             playAudio(wrongAudio);
+			iosTouch = 0;
             // 停止當前正在播放的音檔（如果有）
             if (currentAudio) {
                 currentAudio.pause();
@@ -1148,7 +1144,7 @@ const myData = `
             document.removeEventListener('keydown', handleKeyDown);
 
             // 移除點擊事件監聽器
-            canvas.removeEventListener('click', playTwice);
+            document.removeEventListener('click', playTwice);
 
             canvas.style.display = 'none';
             document.getElementById('gameSettings').style.display = 'block';
@@ -1194,9 +1190,23 @@ const myData = `
             }
         }
 
+		let iosTouch = 0;  //here
+
+		function isIOS() {
+			const userAgent = navigator.userAgent.toLowerCase();
+			return /iphone|ipad|ipod/.test(userAgent);
+		}
+
+
+
+
         function handleTouchStart(event) {
             touchStartX = event.touches[0].clientX;
             touchStartY = event.touches[0].clientY;
+			if (isIOS() && iosTouch == 0) {
+				playTwice();
+				iosTouch = 1;
+			}
         }
 
         function handleTouchEnd(event) {
@@ -1270,7 +1280,7 @@ const myData = `
             wrongFoodLabel.style.display = 'block';
 
             // 添加點擊事件監聽器
-            canvas.addEventListener('click', playTwice);
+            //document.addEventListener('click', playTwice);
 
             resetUnusedWords();
             initGame();
@@ -1287,8 +1297,8 @@ const myData = `
         }
 
         document.addEventListener('keydown', handleKeyDown);
-        canvas.addEventListener('touchstart', handleTouchStart, false);
-        canvas.addEventListener('touchend', handleTouchEnd, false);
+        document.addEventListener('touchstart', handleTouchStart, false);
+        document.addEventListener('touchend', handleTouchEnd, false);
 
         document.body.addEventListener('touchmove', function(e) {
             e.preventDefault();
@@ -1309,9 +1319,9 @@ const myData = `
             if (windowWidth < windowHeight) { // 直式
                 if (windowWidth < 600) { // 小螢幕手機
                     canvasWidth = 300;
-                    canvasHeight = 500;
-                    containerWidth = 300;
-                    containerHeight = 551;
+                    canvasHeight = 400;
+                    containerWidth = 304;
+                    containerHeight = 451;
                 } else { // 大螢幕或平板
                     canvasWidth = 400;
                     canvasHeight = 400;
@@ -1320,10 +1330,10 @@ const myData = `
                 }
             } else { // 橫式
                 if (windowHeight < 450) { // 小螢幕手機
-                    canvasWidth = 600;
-                    canvasHeight = 300;
-                    containerWidth = 400;
-                    containerHeight = 351;
+                    canvasWidth = 450;
+                    canvasHeight = 250;
+                    containerWidth = 454;
+                    containerHeight = 301;
                 } else { // 大螢幕或平板
                     canvasWidth = 400;
                     canvasHeight = 400;
