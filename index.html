@@ -1131,7 +1131,7 @@ const myData = `
 				updateScore();
 				
 				// 更新遊戲速度
-				gameSpeed = Math.max(50, baseSpeed - score);
+				gameSpeed = Math.max(150, baseSpeed - score*2);
 				clearInterval(gameInterval);
 				gameInterval = setInterval(gameLoop, gameSpeed);
 				
