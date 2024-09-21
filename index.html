@@ -181,7 +181,7 @@
 		  padding: 20px;
 		  border: 1px solid #888;
 		  width: 80%;
-		  max-width: 250px;
+		  max-width: 300px;
 		  border-radius: 10px;
 		  text-align: center;
 		  box-shadow: 0 4px 8px rgba(0,0,0,0.1);
@@ -197,6 +197,19 @@
 		  margin-bottom: 20px;
 		}
 
+		#starRating {
+		  font-size: 24px;
+		  color: #FFD700;
+		  margin-bottom: 20px;
+		  display: flex;
+		  flex-wrap: wrap;
+		  justify-content: center;
+		  gap: 5px;
+		}
+
+		.star {
+		  display: inline-block;
+		}
 		#modalClose {
 		  background-color: #4CAF50;
 		  color: white;
@@ -274,6 +287,7 @@
 	  <div class="modal-content">
 		<h2 id="modalTitle"></h2>
 		<p id="modalMessage"></p>
+		<div id="starRating"></div>
 		<button id="modalClose">關閉</button>
 	  </div>
 	</div>
@@ -1224,7 +1238,7 @@ const myData = `
                 currentAudio.pause();
                 currentAudio.currentTime = 0;
             }
-            showCustomModal('遊戲結束', `你的得分是: ${score}`);
+            showCustomModal('遊戲結束', `你的得分是: ${score}`, score);
             clearInterval(gameInterval);
             isGameRunning = false;
             document.removeEventListener('keydown', handleKeyDown);
@@ -1287,9 +1301,6 @@ const myData = `
             touchStartX = event.touches[0].clientX;
             touchStartY = event.touches[0].clientY;
 
-			if (isIOS()) {
-				alert("AAA");
-			}
 			if (isIOS() && !iosTouch) {
 				playTwice();
 				iosTouch = true;
@@ -1461,14 +1472,26 @@ const myData = `
 
 
 
-		function showCustomModal(title, message) {
+		function showCustomModal(title, message, score) {
 		  const modal = document.getElementById('customModal');
 		  const modalTitle = document.getElementById('modalTitle');
 		  const modalMessage = document.getElementById('modalMessage');
+		  const starRating = document.getElementById('starRating');
 		  const modalClose = document.getElementById('modalClose');
 
 		  modalTitle.textContent = title;
 		  modalMessage.textContent = message;
+		  
+		  // 清空之前的星星
+		  starRating.innerHTML = '';
+		  
+		  for (let i = 0; i < score; i++) {
+			const star = document.createElement('span');
+			star.textContent = '⭐';
+			star.className = 'star';
+			starRating.appendChild(star);
+		  }
+		  
 		  modal.style.display = 'block';
 
 		  modalClose.onclick = function() {
