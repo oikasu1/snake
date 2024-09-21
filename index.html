@@ -17,9 +17,8 @@
             background-color: #f5f5f5;
             color: #333;
 			user-select: none;
-    overflow-y: auto;
-    -webkit-overflow-scrolling: touch;
         }
+
 
         #gameSettings {
             background-color: white;
@@ -66,14 +65,6 @@
             font-size: 16px;
         }
 
-        #speedSelection {}
-
-        #speedSelection h2 {
-            margin-bottom: 15px;
-            color: #2c3e50;
-            font-size: 24px;
-        }
-
         button {
             padding: 8px 8px;
             margin: 5px 5px;
@@ -117,6 +108,7 @@
             display: none;
             position: relative;
             text-align: center;
+			margin: 0;
         }
 
         #header {
@@ -178,7 +170,7 @@
 <body>
 
     <div id="gameSettings">
-        <h2>🥷學校客事100</h2>
+        <h2>🥷學校客事💯</h2>
         <div>
             <label for="lessonSelect">關卡：</label>
             <select id="lessonSelect"></select>
@@ -195,10 +187,11 @@
             <label for="blockCountSelect">數量：</label>
             <select id="blockCountSelect">
                 <option value="2">2</option>
-                <option value="3">3</option>
+                <option value="3" selected>3</option>
+				<option value="4">4</option>
             </select>
         </div>
-        <div id="speedSelection">
+        <div>
             <label for="speedSelect">速度：</label>
             <select id="speedSelect">
                 <option value="slow">寬寬 🚲</option>
@@ -226,6 +219,7 @@
         <div id="correctFoodLabel" class="food-label"></div>
         <div id="wrongFoodLabel" class="food-label"></div>
         <div id="wrongFoodLabel2" class="food-label"></div>
+		<div id="wrongFoodLabel3" class="food-label"></div>
     </div>
 
     <script>
@@ -763,7 +757,7 @@ const myData = `
             // 添加"全部"選項到課別
             const allOption = document.createElement('option');
             allOption.value = 'all';
-            allOption.textContent = '全部';
+            allOption.textContent = '歸下 (全部)';
             lessonSelect.appendChild(allOption);
 
             // 添加其他課程選項
@@ -777,6 +771,9 @@ const myData = `
             // 獲取非"音檔"和"分類"的標題
             const validHeaders = headers.filter(header => header !== '音檔' && header !== '分類');
 
+			// 檢查是否包含所有必要的標題
+			const hasAllRequiredHeaders = ['國語', '注音'].every(header => validHeaders.includes(header));
+
             // 填充題目選單
             validHeaders.forEach(header => {
                 const questionOption = document.createElement('option');
@@ -785,17 +782,26 @@ const myData = `
                 questionSelect.appendChild(questionOption);
             });
 
-            // 設置默認選項
-            if (questionSelect.options.length > 0) {
-                questionSelect.selectedIndex = 0;
-            }
+			// 設置默認選項
+			if (hasAllRequiredHeaders) {
+				// 如果包含所有必要的標題,設置默認值
+				questionSelect.value = '注音';
+			} else if (questionSelect.options.length > 0) {
+				// 否則,選擇第一個選項
+				questionSelect.selectedIndex = 0;
+			}
 
-            // 初始填充答案選單
-            updateAnswerSelect();
+			// 初始填充答案選單
+			updateAnswerSelect();
 
-            // 添加事件監聽器
-            questionSelect.addEventListener('change', updateAnswerSelect);
-        }
+			// 如果包含所有必要的標題,設置答案默認值為"國語"
+			if (hasAllRequiredHeaders) {
+				answerSelect.value = '國語';
+			}
+
+			// 添加事件監聽器
+			questionSelect.addEventListener('change', updateAnswerSelect);
+		}
 
         function updateAnswerSelect() {
             const questionSelect = document.getElementById('questionSelect');
@@ -967,21 +973,35 @@ const myData = `
             correctFood = generateFoodPosition();
 
             // 生成錯誤答案的位置，確保 y 座標不同
-            do {
-                wrongFood = generateFoodPosition();
-            } while (wrongFood.y === correctFood.y);
+			// 生成錯誤答案的位置
+			wrongFood = generateFoodPosition();
+			while (wrongFood.y === correctFood.y) {
+				wrongFood = generateFoodPosition();
+			}
 
-            // 如果選擇了 3 個方塊，生成第二個錯誤答案的位置
-            if (selectedBlockCount === 3) {
-                do {
-                    wrongFood2 = generateFoodPosition();
-                } while (
-                    wrongFood2.y === correctFood.y ||
-                    wrongFood2.y === wrongFood.y
-                );
-            } else {
-                wrongFood2 = null; // 確保在 2 方塊模式下 wrongFood2 為 null
-            }
+			// 生成第二個錯誤答案的位置
+			if (selectedBlockCount >= 3) {
+				wrongFood2 = generateFoodPosition();
+				while (wrongFood2.y === correctFood.y || wrongFood2.y === wrongFood.y) {
+					wrongFood2 = generateFoodPosition();
+				}
+			} else {
+				wrongFood2 = null;
+			}
+
+
+			// 生成第三個錯誤答案的位置
+			if (selectedBlockCount === 4) {
+				wrongFood3 = generateFoodPosition();
+				while (wrongFood3.y === correctFood.y || wrongFood3.y === wrongFood.y || 
+					   (wrongFood2 && wrongFood3.y === wrongFood2.y)) {
+					wrongFood3 = generateFoodPosition();
+				}
+			} else {
+				wrongFood3 = null;
+			}
+
+
 
             // 設置食物標籤位置和內容
             setFoodLabelPosition(correctFoodLabel, correctFood, currentCorrectTranslation);
@@ -991,17 +1011,30 @@ const myData = `
             currentWrongTranslation = wrongTranslations[Math.floor(Math.random() * wrongTranslations.length)];
             setFoodLabelPosition(wrongFoodLabel, wrongFood, currentWrongTranslation);
 
-            if (selectedBlockCount === 3 && wrongFood2) {
-                let secondWrongTranslation;
-                do {
-                    secondWrongTranslation = wrongTranslations[Math.floor(Math.random() * wrongTranslations.length)];
-                } while (secondWrongTranslation === currentWrongTranslation);
-                setFoodLabelPosition(document.getElementById('wrongFoodLabel2'), wrongFood2, secondWrongTranslation);
-                document.getElementById('wrongFoodLabel2').style.display = 'block';
-            } else {
-                document.getElementById('wrongFoodLabel2').style.display = 'none';
-            }
-        }
+
+			if (selectedBlockCount >= 3 && wrongFood2) {
+				let secondWrongTranslation;
+				do {
+					secondWrongTranslation = wrongTranslations[Math.floor(Math.random() * wrongTranslations.length)];
+				} while (secondWrongTranslation === currentWrongTranslation);
+				setFoodLabelPosition(document.getElementById('wrongFoodLabel2'), wrongFood2, secondWrongTranslation);
+				document.getElementById('wrongFoodLabel2').style.display = 'block';
+			} else {
+				document.getElementById('wrongFoodLabel2').style.display = 'none';
+			}
+
+			if (selectedBlockCount === 4 && wrongFood3) {
+				let thirdWrongTranslation;
+				do {
+					thirdWrongTranslation = wrongTranslations[Math.floor(Math.random() * wrongTranslations.length)];
+				} while (thirdWrongTranslation === currentWrongTranslation || 
+						 thirdWrongTranslation === document.getElementById('wrongFoodLabel2').textContent);
+				setFoodLabelPosition(document.getElementById('wrongFoodLabel3'), wrongFood3, thirdWrongTranslation);
+				document.getElementById('wrongFoodLabel3').style.display = 'block';
+			} else {
+				document.getElementById('wrongFoodLabel3').style.display = 'none';
+			}
+		}
 
         function generateFoodPosition() {
             const x = Math.floor(Math.random() * (canvas.width / gridSize));
@@ -1081,38 +1114,38 @@ const myData = `
             });
         }
 
-        function drawFood() {
-            ctx.fillStyle = 'red';
-            ctx.fillRect(correctFood.x * gridSize, correctFood.y * gridSize, gridSize - 2, gridSize - 2);
-            ctx.fillRect(wrongFood.x * gridSize, wrongFood.y * gridSize, gridSize - 2, gridSize - 2);
+		function drawFood() {
+			ctx.fillStyle = 'red';
+			ctx.fillRect(correctFood.x * gridSize, correctFood.y * gridSize, gridSize - 2, gridSize - 2);
+			ctx.fillRect(wrongFood.x * gridSize, wrongFood.y * gridSize, gridSize - 2, gridSize - 2);
 
-            const selectedBlockCount = parseInt(document.getElementById('blockCountSelect').value);
-            if (selectedBlockCount === 3 && wrongFood2) {
-                ctx.fillRect(wrongFood2.x * gridSize, wrongFood2.y * gridSize, gridSize - 2, gridSize - 2);
-            }
-        }
+			const selectedBlockCount = parseInt(document.getElementById('blockCountSelect').value);
+			if (selectedBlockCount >= 3 && wrongFood2) {
+				ctx.fillRect(wrongFood2.x * gridSize, wrongFood2.y * gridSize, gridSize - 2, gridSize - 2);
+			}
+			if (selectedBlockCount === 4 && wrongFood3) {
+				ctx.fillRect(wrongFood3.x * gridSize, wrongFood3.y * gridSize, gridSize - 2, gridSize - 2);
+			}
+		}
 
-        function moveSnake() {
-            const head = {
-                x: snake[0].x + dx,
-                y: snake[0].y + dy
-            };
-            snake.unshift(head);
+		function moveSnake() {
+			const head = { x: snake[0].x + dx, y: snake[0].y + dy };
+			snake.unshift(head);
 
-            if (head.x === correctFood.x && head.y === correctFood.y) {
-                score++;
-                updateWordStats(currentWordId, true);
-                generateNewWord();
-                updateScore();
-                drawSnake(); // 立即重繪蛇，更新頭部的得分顯示
-            } else if (head.x === wrongFood.x && head.y === wrongFood.y ||
-                (wrongFood2 && head.x === wrongFood2.x && head.y === wrongFood2.y)) {
-                updateWordStats(currentWordId, false);
-                endGame();
-            } else {
-                snake.pop();
-            }
-        }
+			if (head.x === correctFood.x && head.y === correctFood.y) {
+				score++;
+				updateWordStats(currentWordId, true);
+				generateNewWord();
+				updateScore();
+			} else if (head.x === wrongFood.x && head.y === wrongFood.y ||
+					   (wrongFood2 && head.x === wrongFood2.x && head.y === wrongFood2.y) ||
+					   (wrongFood3 && head.x === wrongFood3.x && head.y === wrongFood3.y)) {
+				updateWordStats(currentWordId, false);
+				endGame();
+			} else {
+				snake.pop();
+			}
+		}
 
         function gameLoop() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
