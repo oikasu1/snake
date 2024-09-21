@@ -682,7 +682,10 @@ const myData = `
         let allWords = [];
         let unusedWords = [];
         let isGameRunning = false;
-
+		let speedIcon = null;
+		let speedIconTimer = null;
+		let speedIconVisible = false;
+		let currentScale = 1;
 
 
 
@@ -1126,6 +1129,15 @@ const myData = `
 			if (selectedBlockCount === 4 && wrongFood3) {
 				ctx.fillRect(wrongFood3.x * gridSize, wrongFood3.y * gridSize, gridSize - 2, gridSize - 2);
 			}
+			if (speedIconVisible && speedIcon) {
+				const scaledGridSize = gridSize / currentScale;
+				ctx.font = `${scaledGridSize}px Arial`;
+				ctx.textAlign = 'center';
+				ctx.textBaseline = 'middle';
+				ctx.fillText(speedIcon.emoji, 
+							 speedIcon.x * gridSize + gridSize / 2, 
+							 speedIcon.y * gridSize + gridSize / 2);
+			}
 		}
 
 		function moveSnake() {
@@ -1133,19 +1145,45 @@ const myData = `
 			snake.unshift(head);
 
 			if (head.x === correctFood.x && head.y === correctFood.y) {
-				score++;
-				updateWordStats(currentWordId, true);
-				generateNewWord();
-				updateScore();
+						score++;
+						updateWordStats(currentWordId, true);
+						generateNewWord();
+						updateScore();
 			} else if (head.x === wrongFood.x && head.y === wrongFood.y ||
 					   (wrongFood2 && head.x === wrongFood2.x && head.y === wrongFood2.y) ||
 					   (wrongFood3 && head.x === wrongFood3.x && head.y === wrongFood3.y)) {
-				updateWordStats(currentWordId, false);
-				endGame();
+						updateWordStats(currentWordId, false);
+						endGame();
+			} else if (speedIconVisible && head.x === speedIcon.x && head.y === speedIcon.y) {
+				// 吃到速度圖示
+				speedIconVisible = false;
+				clearTimeout(speedIconTimer);
+				changeSpeed(speedIcon.speed);
 			} else {
 				snake.pop();
 			}
 		}
+
+
+		function changeSpeed(speed) {
+			clearInterval(gameInterval);
+			switch (speed) {
+				case 'slow':
+					gameSpeed = 400;
+					break;
+				case 'normal':
+					gameSpeed = 300;
+					break;
+				case 'quick':
+					gameSpeed = 250;
+					break;
+				case 'fast':
+					gameSpeed = 200;
+					break;
+			}
+			gameInterval = setInterval(gameLoop, gameSpeed);
+		}
+
 
         function gameLoop() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -1170,6 +1208,7 @@ const myData = `
                 currentAudio.pause();
                 currentAudio.currentTime = 0;
             }
+			clearTimeout(speedIconTimer);
             alert(`遊戲結束！你的得分是: ${score}`);
             container.style.display = 'none';
             clearInterval(gameInterval);
@@ -1319,7 +1358,38 @@ const myData = `
             resetUnusedWords();
             initGame();
             gameInterval = setInterval(gameLoop, gameSpeed);
+			speedIconTimer = setTimeout(showSpeedIcon, 15000);
         }
+
+
+
+		function showSpeedIcon() {
+			const speeds = [
+				{ emoji: '🚲', speed: 'slow' },
+				{ emoji: '🚗', speed: 'normal' },
+				{ emoji: '🛩️', speed: 'quick' },
+				{ emoji: '🚀', speed: 'fast' }
+			];
+			speedIcon = speeds[Math.floor(Math.random() * speeds.length)];
+
+			// 計算接近中心的格子位置
+			const centerX = Math.floor((canvas.width / gridSize) / 2);
+			const centerY = Math.floor((canvas.height / gridSize) / 2);
+			
+			// 在中心位置的基礎上隨機偏移 -1, 0 或 1 個格子
+			speedIcon.x = centerX + Math.floor(Math.random() * 3) ;
+			speedIcon.y = centerY + Math.floor(Math.random() * 3) ;
+
+
+			speedIconVisible = true;
+			
+			// 10秒後隱藏圖示
+			setTimeout(() => {
+				speedIconVisible = false;
+				// 20秒後再次顯示圖示
+				speedIconTimer = setTimeout(showSpeedIcon, 15000);
+			}, 10000);
+		}
 
         function updateScore() {
             scoreDisplay.textContent = `✨得分: ${score}`;
@@ -1383,6 +1453,12 @@ const myData = `
             gridSize = Math.min(canvasWidth, canvasHeight) / 20;
 
             scaleElement(container, containerWidth, containerHeight);
+			if (isGameRunning) {
+				ctx.clearRect(0, 0, canvas.width, canvas.height);
+				drawSnake();
+				drawFood();
+			}
+
         }
 
 
@@ -1395,8 +1471,8 @@ const myData = `
 
             const scale = Math.min(scaleX, scaleY);
 
-            e.style.transform = `scale(${scale})`;
-            container.style.marginTop = "10px";
+			e.style.transform = `scale(${currentScale})`;
+			container.style.marginTop = "10px";
         }
 
         // 在頁面載入和視窗大小改變時調用 resizeCanvas
