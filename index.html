@@ -170,7 +170,7 @@
 <body>
 
     <div id="gameSettings">
-        <h2>🥷學校客事💯</h2>
+        <h2>🥷學校-客事💯</h2>
         <div>
             <label for="lessonSelect">關卡：</label>
             <select id="lessonSelect"></select>
@@ -223,29 +223,6 @@
     </div>
 
     <script>
-        const canvas = document.getElementById('gameCanvas');
-        const ctx = canvas.getContext('2d');
-        const wordDisplay = document.getElementById('wordDisplay');
-        const scoreDisplay = document.getElementById('scoreDisplay');
-        const timeDisplay = document.getElementById('timeDisplay');
-        const correctFoodLabel = document.getElementById('correctFoodLabel');
-        const wrongFoodLabel = document.getElementById('wrongFoodLabel');
-        const container = document.getElementById('container');
-
-        let gridSize = 20;
-        let snake, correctFood, wrongFood, dx, dy, score, gameSpeed, gameInterval, elapsedTime, startTime;
-        let currentWord, currentCorrectTranslation, currentWrongTranslation;
-        let isAdjacent;
-
-        const rightAudio = new Audio('right.mp3');
-        const wrongAudio = new Audio('wrong.mp3');
-
-        function playAudio(audio) {
-            audio.currentTime = 0;
-            audio.play();
-        }
-
-
 
 const myData = `
 分類	國語	客語	拼音	注音	音檔
@@ -675,6 +652,20 @@ const myData = `
 八_關心 24鼓勵	你很厲害	你真厲害	henˋ zhinˇ li hoi	ˋ ˇ  	k324.mp3
 `;
 
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const wordDisplay = document.getElementById('wordDisplay');
+        const scoreDisplay = document.getElementById('scoreDisplay');
+        const timeDisplay = document.getElementById('timeDisplay');
+        const correctFoodLabel = document.getElementById('correctFoodLabel');
+        const wrongFoodLabel = document.getElementById('wrongFoodLabel');
+        const container = document.getElementById('container');
+
+        let gridSize = 20;
+        let snake, correctFood, wrongFood, dx, dy, score, gameSpeed, gameInterval, elapsedTime, startTime;
+        let currentWord, currentCorrectTranslation, currentWrongTranslation;
+        let isAdjacent;
+
         let currentAudio = null;
         let headers = [];
         let wordPairs = [];
@@ -686,9 +677,16 @@ const myData = `
 		let speedIconTimer = null;
 		let speedIconVisible = false;
 		let currentScale = 1;
+		let obstacle = null;
+		let obstacleTimer = null;
 
+        const rightAudio = new Audio('right.mp3');
+        const wrongAudio = new Audio('wrong.mp3');
 
-
+        function playAudio(audio) {
+            audio.currentTime = 0;
+            audio.play();
+        }
         function playTwice() {
             if (currentAudio) {
                 currentAudio.pause();
@@ -927,7 +925,30 @@ const myData = `
             startTime = Date.now();
             resetUnusedWords();
             generateNewWord();
+			scheduleNextObstacle();
         }
+
+
+		function scheduleNextObstacle() {
+			clearTimeout(obstacleTimer);
+			obstacleTimer = setTimeout(() => {
+				generateObstacle();
+				obstacleTimer = setTimeout(() => {
+					obstacle = null;
+					scheduleNextObstacle();
+				}, 8000); // 消失
+			}, 15000); // 出現
+		}
+
+		function generateObstacle() {
+			const obstacles = ['🪨', '🪵', '🗻'];
+			const obstacleType = obstacles[Math.floor(Math.random() * obstacles.length)];
+			obstacle = {
+				x: Math.floor(Math.random() * (canvas.width / gridSize)),
+				y: Math.floor(Math.random() * (canvas.height / gridSize)),
+				type: obstacleType
+			};
+		}
 
         function resetUnusedWords() {
             unusedWords = [...wordPairs];
@@ -1138,6 +1159,15 @@ const myData = `
 							 speedIcon.x * gridSize + gridSize / 2, 
 							 speedIcon.y * gridSize + gridSize / 2);
 			}
+			if (obstacle) {
+				const scaledGridSize = gridSize / currentScale;
+				ctx.font = `${scaledGridSize}px Arial`;
+				ctx.textAlign = 'center';
+				ctx.textBaseline = 'middle';
+				ctx.fillText(obstacle.type, 
+					obstacle.x * gridSize + gridSize / 2, 
+					obstacle.y * gridSize + gridSize / 2);
+			}
 		}
 
 		function moveSnake() {
@@ -1151,9 +1181,10 @@ const myData = `
 						updateScore();
 			} else if (head.x === wrongFood.x && head.y === wrongFood.y ||
 					   (wrongFood2 && head.x === wrongFood2.x && head.y === wrongFood2.y) ||
-					   (wrongFood3 && head.x === wrongFood3.x && head.y === wrongFood3.y)) {
-						updateWordStats(currentWordId, false);
-						endGame();
+					   (wrongFood3 && head.x === wrongFood3.x && head.y === wrongFood3.y) ||
+					   (obstacle && head.x === obstacle.x && head.y === obstacle.y)) {
+				updateWordStats(currentWordId, false);
+				endGame();
 			} else if (speedIconVisible && head.x === speedIcon.x && head.y === speedIcon.y) {
 				// 吃到速度圖示
 				speedIconVisible = false;
@@ -1212,6 +1243,7 @@ const myData = `
                 currentAudio.currentTime = 0;
             }
 			clearTimeout(speedIconTimer);
+			clearTimeout(obstacleTimer);
             alert(`遊戲結束！你的得分是: ${score}`);
             container.style.display = 'none';
             clearInterval(gameInterval);
@@ -1455,17 +1487,24 @@ const myData = `
             canvas.width = canvasWidth;
             canvas.height = canvasHeight;
 
-            // 更新全局變量 gridSize
-            gridSize = Math.min(canvasWidth, canvasHeight) / 20;
 
-            scaleElement(container, containerWidth, containerHeight);
+			// 更新全局變量 gridSize
+			gridSize = Math.min(canvasWidth, canvasHeight) / 20;
+
+			scaleElement(container, containerWidth, containerHeight);
+
+			// 在縮放後調整 container 的位置
+			container.style.position = 'absolute';
+			container.style.left = '50%';
+			container.style.top = '50%';
+			container.style.transform = `translate(-50%, -50%) scale(${currentScale})`;
+
 			if (isGameRunning) {
 				ctx.clearRect(0, 0, canvas.width, canvas.height);
 				drawSnake();
 				drawFood();
 			}
-
-        }
+		}
 
 
         function scaleElement(e, w, h) {
@@ -1478,13 +1517,16 @@ const myData = `
             const scale = Math.min(scaleX, scaleY);
 
 			e.style.transform = `scale(${currentScale})`;
+			e.style.transformOrigin = 'top center';
 			container.style.marginTop = "10px";
         }
 
         // 在頁面載入和視窗大小改變時調用 resizeCanvas
         window.addEventListener('load', resizeCanvas);
         window.addEventListener('resize', resizeCanvas);
-    </script>
+
+	</script>
 </body>
 
 </html>
+
