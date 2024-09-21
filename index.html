@@ -1274,8 +1274,11 @@ const myData = `
 
 		function isIOS() {
 			const userAgent = navigator.userAgent.toLowerCase();
-			return /iphone|ipad|ipod/.test(userAgent);
+			const isIOSDevice = /iphone|ipod/.test(userAgent);  // iPhone 和 iPod 檢測
+			const isIPad = /ipad/.test(userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);  // iPad 檢測
+			return isIOSDevice || isIPad;
 		}
+
 
 
 
@@ -1284,6 +1287,9 @@ const myData = `
             touchStartX = event.touches[0].clientX;
             touchStartY = event.touches[0].clientY;
 
+			if (isIOS()) {
+				alert("AAA");
+			}
 			if (isIOS() && !iosTouch) {
 				playTwice();
 				iosTouch = true;
